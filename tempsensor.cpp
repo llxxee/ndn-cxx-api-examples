@@ -2,6 +2,7 @@
 #define _GNU_SOURCE
 #endif
 #include <ndn-cxx/face.hpp>
+#include <ndn-cxx/security/signing-helpers.hpp>
 #include <iostream>
 #include <fstream>
 #include <string>
@@ -33,7 +34,12 @@ private:
     Data data(Name("/room/temp").append(m_sensor_id).appendTimestamp());
     data.setFreshnessPeriod(10_ms);
     data.setContent(reinterpret_cast<uint8_t*>(&temperature), sizeof(temperature));
-    m_keyChain.sign(data);
+
+    const auto& pib = m_keyChain.getPib();
+    const auto& identity = pib.getIdentity(Name("/temp-sensor"));
+    m_keyChain.sign(data, signingWithSha256());
+
+
     std::cout << "Name: " << interest.getName().toUri() 
               << " Temperature: " << temperature 
               << std::endl;

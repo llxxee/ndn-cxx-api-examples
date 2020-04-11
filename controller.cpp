@@ -3,6 +3,7 @@
 #endif
 #include <ndn-cxx/face.hpp>
 #include <ndn-cxx/util/scheduler.hpp>
+#include <ndn-cxx/security/verification-helpers.hpp>
 #include <boost/asio/io_service.hpp>
 #include <iostream>
 #include <functional>
@@ -31,6 +32,16 @@ private:
   }
 
   void afterGetTemperature(const Data& data){
+    const auto& pib = m_keyChain.getPib();
+    const auto& identity = pib.getIdentity(Name("/temp-sensor"));
+    const auto& key = identity.getDefaultKey();
+    const auto& cert = key.getDefaultCertificate();
+    if (security::verifySignature(data, cert)) {
+      std::cout << "Great. This sig is good" << std::endl;
+    }
+    else {
+      std::cout << "NO. This sig is no good" << std::endl;
+    }
     int temperature = *reinterpret_cast<const int*>(data.getContent().value());
     std::cout << "Temperature: " << temperature << std::endl;
     m_face.expressInterest(Interest("/room/aircon/state").setMustBeFresh(true),
@@ -67,6 +78,7 @@ private:
 
 private:
   boost::asio::io_service m_ioService;
+  KeyChain m_keyChain;
   Face m_face;
   Scheduler m_scheduler;
 };
