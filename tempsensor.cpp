@@ -1,18 +1,20 @@
 #ifndef _GNU_SOURCE
 #define _GNU_SOURCE
 #endif
-#include <ndn-cxx/face.hpp>
-#include <iostream>
 #include <fstream>
-#include <string>
 #include <functional>
+#include <iostream>
+#include <ndn-cxx/face.hpp>
+#include <string>
 using namespace ndn;
 
-class TempSensor{
+class TempSensor {
 public:
-  TempSensor(){}
+  TempSensor() {}
 
-  void run(std::string filename, std::string sensor_id){
+  void
+  run(std::string filename, std::string sensor_id)
+  {
     m_file.open(filename);
     m_sensor_id = sensor_id;
     m_face.setInterestFilter("/room/temp",
@@ -24,29 +26,31 @@ public:
   }
 
 private:
-  void onInterest(const Interest& interest){
+  void
+  onInterest(const Interest& interest)
+  {
     int temperature;
-    if(!(m_file >> temperature)){
+    if (!(m_file >> temperature)) {
       m_file.seekg(std::ios_base::beg);
       m_file >> temperature;
     }
     Data data(Name("/room/temp").append(m_sensor_id).appendTimestamp());
     data.setFreshnessPeriod(10_ms);
-    data.setContent(reinterpret_cast<uint8_t*>(&temperature), sizeof(temperature));
+    data.setContent(reinterpret_cast<uint8_t*>(&temperature),
+                    sizeof(temperature));
     m_keyChain.sign(data);
-    std::cout << "Name: " << interest.getName().toUri() 
-              << " Temperature: " << temperature 
-              << std::endl;
+    std::cout << "Name: " << interest.getName().toUri() << std::endl
+              << "Temperature: " << temperature << std::endl;
     m_face.put(data);
   }
 
-  void onRegisterFailed(const Name& prefix, const std::string& reason){
-    std::cerr << "ERROR: Failed to register prefix \""
-              << prefix << "\" in local hub's daemon (" << reason << ")"
-              << std::endl;
+  void
+  onRegisterFailed(const Name& prefix, const std::string& reason)
+  {
+    std::cerr << "ERROR: Failed to register prefix \"" << prefix
+              << "\" in local hub's daemon (" << reason << ")" << std::endl;
     m_face.shutdown();
   }
-
 
 private:
   Face m_face;
@@ -55,8 +59,10 @@ private:
   std::string m_sensor_id;
 };
 
-int main(int argc, char* argv[]){
-  if(argc != 3){
+int
+main(int argc, char* argv[])
+{
+  if (argc != 3) {
     std::cout << "Usage: " << argv[0] << " <id> <file>" << std::endl;
     return -1;
   }

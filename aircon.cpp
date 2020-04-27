@@ -1,22 +1,23 @@
 #ifndef _GNU_SOURCE
 #define _GNU_SOURCE
 #endif
-#include <ndn-cxx/face.hpp>
-#include <iostream>
 #include <fstream>
-#include <string>
 #include <functional>
+#include <iostream>
+#include <ndn-cxx/face.hpp>
+#include <string>
 using namespace ndn;
 
 const std::string prefix = "/room/aircon";
 
-class AirCon{
+class AirCon {
 public:
-  AirCon():m_state("off"){}
+  AirCon() : m_state("off") {}
 
-  void run(){
-    m_face.registerPrefix(prefix,
-                          RegisterPrefixSuccessCallback(),
+  void
+  run()
+  {
+    m_face.registerPrefix(prefix, RegisterPrefixSuccessCallback(),
                           bind(&AirCon::onRegisterFailed, this, _1, _2));
     m_face.setInterestFilter(prefix + "/command",
                              std::bind(&AirCon::onCommand, this, _2));
@@ -26,34 +27,37 @@ public:
   }
 
 private:
-  void onInterest(const Interest& interest){
+  void
+  onInterest(const Interest& interest)
+  {
     Data data(Name(interest.getName()).appendTimestamp());
     data.setFreshnessPeriod(10_ms);
-    data.setContent(reinterpret_cast<const uint8_t*>(m_state.c_str()), m_state.length() + 1);
+    data.setContent(reinterpret_cast<const uint8_t*>(m_state.c_str()),
+                    m_state.length() + 1);
     m_keyChain.sign(data);
-    std::cout << "Name: " << interest.getName().toUri() 
-              << " State: " << m_state 
-              << std::endl;
+    std::cout << "Name: " << interest.getName().toUri() << std::endl
+              << "State: " << m_state << std::endl;
     m_face.put(data);
   }
 
-  void onCommand(const Interest& interest){
+  void
+  onCommand(const Interest& interest)
+  {
     Data data(interest.getName());
     m_state = interest.getName()[-1].toUri();
     m_keyChain.sign(data);
-    std::cout << "Name: " << interest.getName().toUri() 
-              << " State: " << m_state 
+    std::cout << "Name: " << interest.getName().toUri() << " State: " << m_state
               << std::endl;
     m_face.put(data);
   }
 
-  void onRegisterFailed(const Name& prefix, const std::string& reason){
-    std::cerr << "ERROR: Failed to register prefix \""
-              << prefix << "\" in local hub's daemon (" << reason << ")"
-              << std::endl;
+  void
+  onRegisterFailed(const Name& prefix, const std::string& reason)
+  {
+    std::cerr << "ERROR: Failed to register prefix \"" << prefix
+              << "\" in local hub's daemon (" << reason << ")" << std::endl;
     m_face.shutdown();
   }
-
 
 private:
   Face m_face;
@@ -61,7 +65,9 @@ private:
   std::string m_state;
 };
 
-int main(int argc, char* argv[]){
+int
+main(int argc, char* argv[])
+{
   AirCon app;
   try {
     app.run();
