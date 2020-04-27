@@ -6,6 +6,10 @@
 #include <iostream>
 #include <ndn-cxx/face.hpp>
 #include <string>
+#include <ndn-cxx/security/validator-config.hpp>
+#include <ndn-cxx/security/v2/validator.hpp>
+#include <ndn-cxx/security/v2/validation-callback.hpp>
+#include <ndn-cxx/security/v2/certificate-fetcher-offline.hpp>
 using namespace ndn;
 
 const std::string prefix = "/alice-home/AIRCON";
@@ -57,12 +61,23 @@ private:
   void
   onCommand(const Interest& interest)
   {
-    Data data(interest.getName());
-    m_state = interest.getName()[3].toUri();
-    m_keyChain.sign(data);
-    std::cout << "\n******\nInterest Name: " << interest.getName().toUri() << std::endl
-              << "New State: " << m_state << std::endl;
-    m_face.put(data);
+    namespace ndnsec = ndn::security::v2;
+    ndnsec::Validator validator(make_unique<ndnsec::ValidationPolicyConfig>(), make_unique<ndnsec::CertificateFetcherOffline>());
+    auto& config = static_cast<ndnsec::ValidationPolicyConfig&>(validator.getPolicy());
+    config.load("schema.conf");
+    validator.validate(interest,
+    [this](auto interest) {
+      std::cout << "ValidatorConfig::NICE. Command Interest has a valid signature" << std::endl;
+      Data data(interest.getName());
+      m_state = interest.getName()[3].toUri();
+      m_keyChain.sign(data);
+      std::cout << "\n******\nInterest Name: " << interest.getName().toUri() << std::endl
+                << "New State: " << m_state << std::endl;
+      m_face.put(data);
+    },
+    [](auto v, auto error) {
+      std::cout << "Error is " << error.getInfo() << std::endl;
+    });
   }
 
   void

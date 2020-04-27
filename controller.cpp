@@ -6,6 +6,7 @@
 #include <iostream>
 #include <ndn-cxx/face.hpp>
 #include <ndn-cxx/util/scheduler.hpp>
+#include <ndn-cxx/security/signing-helpers.hpp>
 using namespace ndn;
 
 class Controller {
@@ -69,8 +70,11 @@ private:
     std::cout << "Command Aircon to take action: " << action << std::endl;
     if (action != "none") {
       auto interest = Interest(aircon_command.append(action).append("bedroom")).setMustBeFresh(true);
-      m_face.expressInterest(
-          interest, DataCallback(), NackCallback(), TimeoutCallback());
+
+      // sign Interest
+      m_keyChain.sign(interest, security::signingByIdentity(Name("/alice-home")));
+
+      m_face.expressInterest(interest, DataCallback(), NackCallback(), TimeoutCallback());
     }
     restart();
   }
@@ -86,6 +90,7 @@ private:
   boost::asio::io_service m_ioService;
   Face m_face;
   Scheduler m_scheduler;
+  KeyChain m_keyChain;
 };
 
 int

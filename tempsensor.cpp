@@ -6,6 +6,7 @@
 #include <iostream>
 #include <ndn-cxx/face.hpp>
 #include <string>
+#include <ndn-cxx/security/signing-helpers.hpp>
 using namespace ndn;
 
 const std::string prefix = "/alice-home/TEMP";
@@ -44,7 +45,19 @@ private:
     data.setFreshnessPeriod(10_ms);
     data.setContent(reinterpret_cast<uint8_t*>(&temperature),
                     sizeof(temperature));
-    m_keyChain.sign(data);
+    // m_keyChain.sign(data);
+    // approach 1:
+    // const auto& pib = m_keyChain.getPib();
+    // const auto& identity = pib.getIdentity(Name("/alice-home/bedroom/sensor-1"));
+    // m_keyChain.sign(data, security::signingByIdentity(identity));
+
+    // approach 2:
+    m_keyChain.sign(data, security::signingByIdentity(Name("/alice-home/bedroom/sensor-1")));
+
+    // approach 3:
+    // const auto& new_identity = m_keyChain.createIdentity("/alice-home/bedroom/sensor-1");
+    // m_keyChain.sign(data, security::signingByIdentity(new_identity));
+
     std::cout << "\n******\nInterest Name: " << interest.getName().toUri() << std::endl
               << "Temperature: " << temperature << std::endl
               << "Data Name: " << data.getName().toUri() << std::endl;
