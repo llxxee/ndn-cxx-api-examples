@@ -8,16 +8,18 @@
 #include <string>
 using namespace ndn;
 
+const std::string prefix = "/alice-home/TEMP";
+const std::string device_id = "/bedroom/sensor-1";
+
 class TempSensor {
 public:
   TempSensor() {}
 
   void
-  run(std::string filename, std::string sensor_id)
+  run(std::string filename)
   {
     m_file.open(filename);
-    m_sensor_id = sensor_id;
-    m_face.setInterestFilter("/room/temp",
+    m_face.setInterestFilter("/alice-home/TEMP/CONTENT/current/bedroom",
                              std::bind(&TempSensor::onInterest, this, _2),
                              RegisterPrefixSuccessCallback(),
                              bind(&TempSensor::onRegisterFailed, this, _1, _2));
@@ -26,6 +28,10 @@ public:
   }
 
 private:
+  /** CS217B NDN Security Tutorial
+   * @todo Demo how to use specific identity/key/certificate to sign the Data packet.
+   * @todo Demo how to create a new identity/key in code.
+   */
   void
   onInterest(const Interest& interest)
   {
@@ -34,13 +40,14 @@ private:
       m_file.seekg(std::ios_base::beg);
       m_file >> temperature;
     }
-    Data data(Name("/room/temp").append(m_sensor_id).appendTimestamp());
+    Data data(Name(prefix).append("CONTENT").append("current").append(device_id).appendTimestamp());
     data.setFreshnessPeriod(10_ms);
     data.setContent(reinterpret_cast<uint8_t*>(&temperature),
                     sizeof(temperature));
     m_keyChain.sign(data);
-    std::cout << "Name: " << interest.getName().toUri() << std::endl
-              << "Temperature: " << temperature << std::endl;
+    std::cout << "\n******\nInterest Name: " << interest.getName().toUri() << std::endl
+              << "Temperature: " << temperature << std::endl
+              << "Data Name: " << data.getName().toUri() << std::endl;
     m_face.put(data);
   }
 
@@ -56,20 +63,19 @@ private:
   Face m_face;
   KeyChain m_keyChain;
   std::fstream m_file;
-  std::string m_sensor_id;
 };
 
 int
 main(int argc, char* argv[])
 {
-  if (argc != 3) {
-    std::cout << "Usage: " << argv[0] << " <id> <file>" << std::endl;
+  if (argc != 2) {
+    std::cout << "Usage: " << argv[0] << "<file>" << std::endl;
     return -1;
   }
 
   TempSensor app;
   try {
-    app.run(argv[2], argv[1]);
+    app.run(argv[1]);
   }
   catch (const std::exception& e) {
     std::cerr << "ERROR: " << e.what() << std::endl;

@@ -8,7 +8,8 @@
 #include <string>
 using namespace ndn;
 
-const std::string prefix = "/room/aircon";
+const std::string prefix = "/alice-home/AIRCON";
+const std::string device_id = "/bedroom/aircon-1";
 
 class AirCon {
 public:
@@ -19,35 +20,48 @@ public:
   {
     m_face.registerPrefix(prefix, RegisterPrefixSuccessCallback(),
                           bind(&AirCon::onRegisterFailed, this, _1, _2));
-    m_face.setInterestFilter(prefix + "/command",
+    m_face.setInterestFilter(prefix + "/CMD",
                              std::bind(&AirCon::onCommand, this, _2));
-    m_face.setInterestFilter(prefix + "/state",
+    m_face.setInterestFilter(prefix + "/CONTENT/state",
                              std::bind(&AirCon::onInterest, this, _2));
     m_face.processEvents();
   }
 
 private:
+  /** CS217B NDN Security Tutorial
+   * @todo Demo how to use specific identity/key/certificate to sign the Data packet.
+   * @todo Demo how to create a new identity/key in code.
+   *
+   * This part is the same as the one used in TempSensor. Will be omitted.
+   */
   void
   onInterest(const Interest& interest)
   {
-    Data data(Name(interest.getName()).appendTimestamp());
+    Data data(Name(prefix).append("CONTENT").append("state").append(device_id).appendTimestamp());
     data.setFreshnessPeriod(10_ms);
     data.setContent(reinterpret_cast<const uint8_t*>(m_state.c_str()),
                     m_state.length() + 1);
     m_keyChain.sign(data);
-    std::cout << "Name: " << interest.getName().toUri() << std::endl
-              << "State: " << m_state << std::endl;
+    std::cout << "\n******\nInterest Name: " << interest.getName().toUri() << std::endl
+              << "State: " << m_state << std::endl
+              << "Data Name: " << data.getName().toUri() << std::endl;
     m_face.put(data);
   }
 
+  /** CS217B NDN Security Tutorial
+   * @todo Demo how to use specific identity/key/certificate to verify Interest's signature.
+   * @todo Demo how to use trust schema to verify Interest's signature.
+   *
+   * Must first finish the Interest signing part in controller.
+   */
   void
   onCommand(const Interest& interest)
   {
     Data data(interest.getName());
-    m_state = interest.getName()[-1].toUri();
+    m_state = interest.getName()[3].toUri();
     m_keyChain.sign(data);
-    std::cout << "Name: " << interest.getName().toUri() << " State: " << m_state
-              << std::endl;
+    std::cout << "\n******\nInterest Name: " << interest.getName().toUri() << std::endl
+              << "New State: " << m_state << std::endl;
     m_face.put(data);
   }
 

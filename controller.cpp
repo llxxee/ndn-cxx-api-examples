@@ -28,8 +28,8 @@ private:
   void
   after10sec()
   {
-    std::cout << "Start a new loop." << std::endl;
-    Interest interest("/room/temp");
+    std::cout << "\n******\nStart a new loop." << std::endl;
+    Interest interest("/alice-home/TEMP/CONTENT/current/bedroom"); // bedroom current temperature content
     interest.setMustBeFresh(true);
     interest.setCanBePrefix(true);
     m_face.expressInterest(interest,
@@ -44,17 +44,20 @@ private:
     int temperature = *reinterpret_cast<const int *>(data.getContent().value());
     std::cout << "Temperature: " << temperature << std::endl;
     m_face.expressInterest(
-        Interest("/room/aircon/state").setMustBeFresh(true),
+        Interest("/alice-home/AIRCON/CONTENT/state/bedroom").setMustBeFresh(true), // bedroom aircon state
         bind(&Controller::afterGetAirconState, this, _2, temperature),
         bind([this] { restart(); }),
         bind([this] { restart(); }));
   }
 
+  /** CS217B NDN Security Tutorial
+   * @todo Demo how to use specific identity/key/certificate to sign the Interest packet.
+   */
   void
   afterGetAirconState(const Data &data, int temperature)
   {
     std::string aircon_state(reinterpret_cast<const char *>(data.getContent().value()));
-    Name aircon_command("/room/aircon/command");
+    Name aircon_command("/alice-home/AIRCON/CMD/");
     std::string action = "none";
     if (temperature < 65 && aircon_state != "heat") {
       action = "heat";
@@ -62,10 +65,10 @@ private:
     else if (temperature > 68 && aircon_state == "heat") {
       action = "off";
     }
-    std::cout << "State: " << aircon_state << std::endl;
-    std::cout << "Action: " << action << std::endl;
+    std::cout << "Aircon State: " << aircon_state << std::endl;
+    std::cout << "Command Aircon to take action: " << action << std::endl;
     if (action != "none") {
-      auto interest = Interest(aircon_command.append(action)).setMustBeFresh(true);
+      auto interest = Interest(aircon_command.append(action).append("bedroom")).setMustBeFresh(true);
       m_face.expressInterest(
           interest, DataCallback(), NackCallback(), TimeoutCallback());
     }
