@@ -67,7 +67,8 @@ private:
     const auto& pib = m_keyChain.getPib();
     const auto& identity = pib.getIdentity(Name("/alice-home"));
     const auto& key = identity.getDefaultKey();
-    std::cout << security::verifySignature(interest, key.getPublicKey().get<uint8_t>(), key.getPublicKey().size()) << std::endl;
+    bool verify_res = security::verifySignature(interest, key.getPublicKey().get<uint8_t>(), key.getPublicKey().size());
+    std::cout << "\nInterest verification result: " << (verify_res ? "ok" : "invalid") << std::endl;
 
     //auto& config = static_cast<ndnsec::ValidationPolicyConfig&>(validator.getPolicy());
     //config.load("schema.conf");
