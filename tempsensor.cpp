@@ -7,6 +7,8 @@
 #include <ndn-cxx/face.hpp>
 #include <string>
 #include <ndn-cxx/security/signing-helpers.hpp>
+#include <ndn-cxx/security/verification-helpers.hpp>
+
 using namespace ndn;
 
 const std::string prefix = "/alice-home/TEMP";

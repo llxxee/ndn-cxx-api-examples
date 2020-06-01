@@ -7,6 +7,8 @@
 #include <ndn-cxx/face.hpp>
 #include <ndn-cxx/util/scheduler.hpp>
 #include <ndn-cxx/security/signing-helpers.hpp>
+#include <ndn-cxx/security/verification-helpers.hpp>
+
 using namespace ndn;
 
 class Controller {
@@ -42,6 +44,14 @@ private:
   void
   afterGetTemperature(const Data &data)
   {
+    // TODO: verify data packet
+    const auto& pib = m_keyChain.getPib();
+    const auto& identity = pib.getIdentity(Name("/alice-home/bedroom/sensor-1"));
+    const auto& key = identity.getDefaultKey();
+    bool verify_result = security::verifySignature(data, key.getPublicKey().get<uint8_t>(), key.getPublicKey().size());
+    std::cout << "Data packet verification result: " << verify_result << std::endl;
+
+
     int temperature = *reinterpret_cast<const int *>(data.getContent().value());
     std::cout << "Temperature: " << temperature << std::endl;
     m_face.expressInterest(
