@@ -62,11 +62,16 @@ private:
   onCommand(const Interest& interest)
   {
     namespace ndnsec = ndn::security::v2;
-    ndnsec::Validator validator(make_unique<ndnsec::ValidationPolicyConfig>(), make_unique<ndnsec::CertificateFetcherOffline>());
-    auto& config = static_cast<ndnsec::ValidationPolicyConfig&>(validator.getPolicy());
-    config.load("schema.conf");
-    validator.validate(interest,
-    [this](auto interest) {
+    //ndnsec::Validator validator(make_unique<ndnsec::ValidationPolicyConfig>(), make_unique<ndnsec::CertificateFetcherOffline>());
+    const auto& pib = m_keyChain.getPib();
+    const auto& identity = pib.getIdentity(Name("/alice-home"));
+    const auto& key = identity.getDefaultKey();
+    std::cout << security::verifySignature(interest, key.getPublicKey().get<uint8_t>(), key.getPublicKey().size()) << std::endl;
+
+    //auto& config = static_cast<ndnsec::ValidationPolicyConfig&>(validator.getPolicy());
+    //config.load("schema.conf");
+    //validator.validate(interest,
+    //[this](auto interest) {
       std::cout << "ValidatorConfig::NICE. Command Interest has a valid signature" << std::endl;
       Data data(interest.getName());
       m_state = interest.getName()[3].toUri();
@@ -74,11 +79,32 @@ private:
       std::cout << "\n******\nInterest Name: " << interest.getName().toUri() << std::endl
                 << "New State: " << m_state << std::endl;
       m_face.put(data);
-    },
-    [](auto v, auto error) {
-      std::cout << "Error is " << error.getInfo() << std::endl;
-    });
+    //},
+    //[](auto v, auto error) {
+    //  std::cout << "Error is " << error.getInfo() << std::endl;
+    //});
   }
+  // void
+  // onCommand(const Interest& interest)
+  // {
+  //   namespace ndnsec = ndn::security::v2;
+  //   ndnsec::Validator validator(make_unique<ndnsec::ValidationPolicyConfig>(), make_unique<ndnsec::CertificateFetcherOffline>());
+  //   auto& config = static_cast<ndnsec::ValidationPolicyConfig&>(validator.getPolicy());
+  //   config.load("schema.conf");
+  //   validator.validate(interest,
+  //   [this](auto interest) {
+  //     std::cout << "ValidatorConfig::NICE. Command Interest has a valid signature" << std::endl;
+  //     Data data(interest.getName());
+  //     m_state = interest.getName()[3].toUri();
+  //     m_keyChain.sign(data);
+  //     std::cout << "\n******\nInterest Name: " << interest.getName().toUri() << std::endl
+  //               << "New State: " << m_state << std::endl;
+  //     m_face.put(data);
+  //   },
+  //   [](auto v, auto error) {
+  //     std::cout << "Error is " << error.getInfo() << std::endl;
+  //   });
+  // }
 
   void
   onRegisterFailed(const Name& prefix, const std::string& reason)
