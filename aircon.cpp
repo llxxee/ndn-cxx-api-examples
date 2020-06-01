@@ -10,6 +10,7 @@
 #include <ndn-cxx/security/v2/validator.hpp>
 #include <ndn-cxx/security/v2/validation-callback.hpp>
 #include <ndn-cxx/security/v2/certificate-fetcher-offline.hpp>
+#include <ndn-cxx/security/verification-helpers.hpp>
 using namespace ndn;
 
 const std::string prefix = "/alice-home/AIRCON";
